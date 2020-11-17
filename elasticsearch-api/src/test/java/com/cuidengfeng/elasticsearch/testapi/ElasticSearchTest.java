@@ -13,6 +13,8 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
@@ -23,6 +25,11 @@ import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.MatchAllQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +37,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 崔登峰测试 es7.6.x 高级客户端测试 api
@@ -157,5 +165,30 @@ public class ElasticSearchTest {
         }
         BulkResponse bulkResponse = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
         System.out.println(bulkResponse.status());
+        System.out.println(bulkResponse.hasFailures());
+    }
+
+    @Test
+    void testSearch() throws IOException {
+        SearchRequest searchRequest = new SearchRequest("cui_index");
+        // 构建搜索条件
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.highlighter();
+        // 查询条件，我们可以使用 QueryBuilders 工具来实现
+        // QueryBuilders.termQuery 精确
+        // QueryBuilders.matchQuery() 匹配所有
+        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("name","崔登峰");
+//        MatchAllQueryBuilder matchAllQueryBuilder = QueryBuilders.matchAllQuery();
+        searchSourceBuilder.query(termQueryBuilder);
+        searchSourceBuilder.timeout(new TimeValue(60, TimeUnit.SECONDS));
+//        searchSourceBuilder.query(matchAllQueryBuilder);
+        searchRequest.source(searchSourceBuilder);
+        SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+        System.out.println(JSON.toJSONString(searchResponse.getHits()));
+        System.out.println("============================");
+        for (SearchHit hit : searchResponse.getHits().getHits()) {
+            System.out.println(hit.getSourceAsMap());
+        }
+
     }
 }
