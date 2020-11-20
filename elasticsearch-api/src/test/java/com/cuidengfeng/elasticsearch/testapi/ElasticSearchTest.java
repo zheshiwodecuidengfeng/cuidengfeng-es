@@ -1,8 +1,10 @@
 package com.cuidengfeng.elasticsearch.testapi;
 
 import com.alibaba.fastjson.JSON;
+import com.cuidengfeng.elasticsearch.entity.Content;
 import com.cuidengfeng.elasticsearch.entity.User;
 import com.google.gson.Gson;
+import org.apache.http.client.utils.DateUtils;
 import org.assertj.core.util.Lists;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -26,11 +28,14 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.MatchAllQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -51,7 +56,7 @@ public class ElasticSearchTest {
     // 测试创建索引
     @Test
     void testCreateIndex() throws IOException {
-        CreateIndexRequest createIndexRequest = new CreateIndexRequest("cuidengfeng_index");
+        CreateIndexRequest createIndexRequest = new CreateIndexRequest("content_index");
         CreateIndexResponse createIndexResponse =
                 restHighLevelClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
         System.out.println(createIndexResponse);
@@ -101,7 +106,7 @@ public class ElasticSearchTest {
     // 获取文档，判断是否存在 get/index/doc/1
     @Test
     void testIsExists() throws IOException {
-        GetRequest getRequest = new GetRequest("cui_index", "1");
+        GetRequest getRequest = new GetRequest("content_index", "1");
         // 不获取返回的_source的上下文了
         getRequest.fetchSourceContext(new FetchSourceContext(false));
         getRequest.storedFields("_none_");
@@ -168,20 +173,52 @@ public class ElasticSearchTest {
         System.out.println(bulkResponse.hasFailures());
     }
 
+    // 特殊的，真的项目一般都会批量插入数据
+    @Test
+    void testContentBulkRequest() throws IOException {
+        BulkRequest bulkRequest = new BulkRequest();
+        bulkRequest.timeout("1s");
+
+        ArrayList<Content> contents = Lists.newArrayList();
+        contents.add(new Content("心病引起的心脏病", DateUtils.parseDate("2020-06-24")));
+        contents.add(new Content("风湿性心脏病换瓣后心脏有杂音?", DateUtils.parseDate("2019-12-22")));
+        contents.add(new Content("心脏植物神经紊乱是心脏病吗？", DateUtils.parseDate("2019-12-22")));
+        contents.add(new Content("心脏病也有“假”？病根在心里！", DateUtils.parseDate("2019-12-20")));
+        contents.add(new Content("胃病老不好，查查心脏！", DateUtils.parseDate("2020-07-21")));
+        contents.add(new Content("频发脑梗，或因心脏病", DateUtils.parseDate("2020-07-07")));
+        contents.add(new Content("防孕期风心病提前做心脏检查", DateUtils.parseDate("2020-05-27")));
+        contents.add(new Content("心梗后心脏最怕累", DateUtils.parseDate("2020-07-11")));
+        contents.add(new Content("心脏似病非病，多事神经官能症", DateUtils.parseDate("2019-12-10")));
+
+
+        // 批处理请求
+        for (int i = 0; i < contents.size(); i++) {
+            bulkRequest.add(
+                    new IndexRequest("content_index").id("" + (i + 1))
+                            .source(JSON.toJSONString(contents.get(i)), XContentType.JSON));
+        }
+        BulkResponse bulkResponse = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+        System.out.println(bulkResponse.status());
+        System.out.println(bulkResponse.hasFailures());
+    }
+
     @Test
     void testSearch() throws IOException {
-        SearchRequest searchRequest = new SearchRequest("cui_index");
+        SearchRequest searchRequest = new SearchRequest("test2");
         // 构建搜索条件
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.highlighter();
+        HighlightBuilder highlightBuilder = new HighlightBuilder().field("心脏病");
+        searchSourceBuilder.highlighter(highlightBuilder);
         // 查询条件，我们可以使用 QueryBuilders 工具来实现
         // QueryBuilders.termQuery 精确
         // QueryBuilders.matchQuery() 匹配所有
-        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("name","崔登峰");
+//        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("title","心脏病");
 //        MatchAllQueryBuilder matchAllQueryBuilder = QueryBuilders.matchAllQuery();
-        searchSourceBuilder.query(termQueryBuilder);
+        MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("title", "心脏病");
+        searchSourceBuilder.sort("_score", SortOrder.DESC);
+        searchSourceBuilder.sort("publishDt", SortOrder.DESC);
+        searchSourceBuilder.query(matchQueryBuilder);
         searchSourceBuilder.timeout(new TimeValue(60, TimeUnit.SECONDS));
-//        searchSourceBuilder.query(matchAllQueryBuilder);
         searchRequest.source(searchSourceBuilder);
         SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
         System.out.println(JSON.toJSONString(searchResponse.getHits()));
@@ -189,6 +226,7 @@ public class ElasticSearchTest {
         for (SearchHit hit : searchResponse.getHits().getHits()) {
             System.out.println(hit.getSourceAsMap());
         }
+
 
     }
 }
