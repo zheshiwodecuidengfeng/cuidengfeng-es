@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/cui-es-jd/cui-es-jd.iml" filepath="$PROJECT_DIR$/cui-es-jd/cui-es-jd.iml" />
       <module fileurl="file://$PROJECT_DIR$/elasticsearch-api/elasticsearch-api.iml" filepath="$PROJECT_DIR$/elasticsearch-api/elasticsearch-api.iml" />
     </modules>
   </component>

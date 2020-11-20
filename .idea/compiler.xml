@@ -7,15 +7,18 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="cui-es-jd" />
         <module name="elasticsearch-api" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="cui-es-jd" target="1.8" />
       <module name="elasticsearch-api" target="1.8" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="cui-es-jd" options="-parameters" />
       <module name="elasticsearch-api" options="-parameters" />
     </option>
   </component>
