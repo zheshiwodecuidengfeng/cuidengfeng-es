@@ -53,7 +53,7 @@ public class ElasticSearchTest {
     // 测试创建索引
     @Test
     void testCreateIndex() throws IOException {
-        CreateIndexRequest createIndexRequest = new CreateIndexRequest("content_index");
+        CreateIndexRequest createIndexRequest = new CreateIndexRequest("taboo_goods");
         CreateIndexResponse createIndexResponse =
                 restHighLevelClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
         System.out.println(createIndexResponse);
@@ -62,7 +62,7 @@ public class ElasticSearchTest {
     // 测试索引是否存在
     @Test
     void testIndexExists() throws IOException {
-        GetIndexRequest indexRequest = new GetIndexRequest(".kibana_task_manager_1");
+        GetIndexRequest indexRequest = new GetIndexRequest("content_index");
         boolean exists = restHighLevelClient.indices().exists(indexRequest, RequestOptions.DEFAULT);
         System.out.println(exists);
     }
@@ -72,6 +72,16 @@ public class ElasticSearchTest {
     void testDeleteIndex() throws IOException {
         DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest("xui_index");
         AcknowledgedResponse delete = restHighLevelClient.indices().delete(deleteIndexRequest, RequestOptions.DEFAULT);
+        System.out.println(delete.isAcknowledged());
+    }
+
+    // 测试删除所有索引
+    @Test
+    void testDeleteAllIndex() throws IOException {
+        DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest("xui_index");
+        AcknowledgedResponse delete = restHighLevelClient.indices().delete(deleteIndexRequest, RequestOptions.DEFAULT);
+        new DeleteIndexRequest();
+
         System.out.println(delete.isAcknowledged());
     }
 
